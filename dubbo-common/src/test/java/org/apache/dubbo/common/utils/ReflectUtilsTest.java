@@ -73,6 +73,7 @@ public class ReflectUtilsTest {
         assertThat(ReflectUtils.getBoxedClass(char.class), sameInstance(Character.class));
         assertThat(ReflectUtils.getBoxedClass(byte.class), sameInstance(Byte.class));
         assertThat(ReflectUtils.getBoxedClass(short.class), sameInstance(Short.class));
+        assertThat(ReflectUtils.getBoxedClass(String.class), sameInstance(String.class));
     }
 
     @Test
@@ -378,13 +379,13 @@ public class ReflectUtilsTest {
         assertTrue(ReflectUtils.getEmptyObject(Map.class) instanceof Map);
         assertTrue(ReflectUtils.getEmptyObject(Object[].class) instanceof Object[]);
         assertEquals(ReflectUtils.getEmptyObject(String.class), "");
-        assertEquals(ReflectUtils.getEmptyObject(short.class), Short.valueOf((short) 0));
-        assertEquals(ReflectUtils.getEmptyObject(byte.class), Byte.valueOf((byte) 0));
-        assertEquals(ReflectUtils.getEmptyObject(int.class), Integer.valueOf(0));
-        assertEquals(ReflectUtils.getEmptyObject(long.class), Long.valueOf(0));
-        assertEquals(ReflectUtils.getEmptyObject(float.class), Float.valueOf(0));
-        assertEquals(ReflectUtils.getEmptyObject(double.class), Double.valueOf(0));
-        assertEquals(ReflectUtils.getEmptyObject(char.class), Character.valueOf('\0'));
+        assertEquals(ReflectUtils.getEmptyObject(short.class), (short) 0);
+        assertEquals(ReflectUtils.getEmptyObject(byte.class), (byte) 0);
+        assertEquals(ReflectUtils.getEmptyObject(int.class), 0);
+        assertEquals(ReflectUtils.getEmptyObject(long.class), 0L);
+        assertEquals(ReflectUtils.getEmptyObject(float.class), (float) 0);
+        assertEquals(ReflectUtils.getEmptyObject(double.class), (double) 0);
+        assertEquals(ReflectUtils.getEmptyObject(char.class), '\0');
         assertEquals(ReflectUtils.getEmptyObject(boolean.class), Boolean.FALSE);
         EmptyClass object = (EmptyClass) ReflectUtils.getEmptyObject(EmptyClass.class);
         assertNotNull(object);
@@ -415,18 +416,44 @@ public class ReflectUtilsTest {
         Assertions.assertEquals("java.lang.String", types1[0].getTypeName());
         Assertions.assertEquals("java.lang.String", types1[1].getTypeName());
 
-        Type[] types2 = ReflectUtils.getReturnTypes(clazz.getMethod("getListFuture"));
-        Assertions.assertEquals("java.util.List", types2[0].getTypeName());
-        Assertions.assertEquals("java.util.List<java.lang.String>", types2[1].getTypeName());
+        Type[] types2 = ReflectUtils.getReturnTypes(clazz.getMethod("getT"));
+        Assertions.assertEquals("java.lang.String", types2[0].getTypeName());
+        Assertions.assertEquals("T", types2[1].getTypeName());
+
+        Type[] types3 = ReflectUtils.getReturnTypes(clazz.getMethod("getS"));
+        Assertions.assertEquals("java.lang.Object", types3[0].getTypeName());
+        Assertions.assertEquals("S", types3[1].getTypeName());
+
+        Type[] types4 = ReflectUtils.getReturnTypes(clazz.getMethod("getListFuture"));
+        Assertions.assertEquals("java.util.List", types4[0].getTypeName());
+        Assertions.assertEquals("java.util.List<java.lang.String>", types4[1].getTypeName());
+
+        Type[] types5 = ReflectUtils.getReturnTypes(clazz.getMethod("getGenericWithUpperFuture"));
+        // T extends String, the first arg should be the upper bound of param
+        Assertions.assertEquals("java.lang.String", types5[0].getTypeName());
+        Assertions.assertEquals("T", types5[1].getTypeName());
+
+        Type[] types6 = ReflectUtils.getReturnTypes(clazz.getMethod("getGenericFuture"));
+        // default upper bound is Object
+        Assertions.assertEquals("java.lang.Object", types6[0].getTypeName());
+        Assertions.assertEquals("S", types6[1].getTypeName());
     }
 
-    public static interface TypeClass {
+    public interface TypeClass<T extends String, S> {
 
         CompletableFuture<String> getFuture();
 
         String getString();
 
+        T getT();
+
+        S getS();
+
         CompletableFuture<List<String>> getListFuture();
+
+        CompletableFuture<T> getGenericWithUpperFuture();
+
+        CompletableFuture<S> getGenericFuture();
     }
 
     public static class EmptyClass {
